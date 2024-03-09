@@ -3,6 +3,9 @@
 #include <vector>
 #include <cstring> 
 
+// parallelization
+#include <omp.h>
+
 struct RGBPixel {
     unsigned char red;
     unsigned char green;
