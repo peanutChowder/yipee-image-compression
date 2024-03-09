@@ -29,11 +29,15 @@ bool readPNGImage(const char* filename, std::vector<RGBPixel>& pixels, int& widt
     // Read IHDR chunk to extract image dimensions
     char ihdr_chunk[25]; // IHDR chunk is 25 bytes
     file.read(ihdr_chunk, 25);
+
+    // use bit arithmetic to cherry pick bytes containing width/height data
     width = (ihdr_chunk[3] << 24) | (ihdr_chunk[4] << 16) | (ihdr_chunk[5] << 8) | ihdr_chunk[6];
     height = (ihdr_chunk[7] << 24) | (ihdr_chunk[8] << 16) | (ihdr_chunk[9] << 8) | ihdr_chunk[10];
 
     // Move to the beginning of pixel data
-    file.seekg(33); // Start of pixel data after IHDR chunk (25 bytes) + CRC (4 bytes) + IDAT chunk header (4 bytes)
+    // Start of pixel data after IHDR chunk (25 bytes) + CRC (4 bytes) + IDAT chunk header (4 bytes)
+    // Start reading at image size data
+    file.seekg(33); 
 
     // Allocate memory for pixel data
     pixels.resize(width * height);
