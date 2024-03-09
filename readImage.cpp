@@ -1,7 +1,13 @@
 #include <iostream>
-#include <fstream>
+
+
 #include <vector>
 #include <cstring> 
+
+// file read
+#include <fstream>
+#include <fcntl.h>
+#include <unistd.h>
 
 // parallelization
 #include <omp.h>
@@ -16,48 +22,71 @@ struct RGBPixel {
 
 
 bool readPNGImage(const char* filename, std::vector<RGBPixel>& pixels, int& width, int& height) {
-    std::ifstream file(filename, std::ios::binary);
-    if (!file.is_open()) {
-        std::cerr << "Error: Unable to open image file." << std::endl;
-        return false;
+    int fd = open(filename, O_RDONLY);
+
+    if (fd == -1) {
+        std::cerr << "Error opening image file" << std::endl;
+        exit(EXIT_FAILURE);
     }
 
-    // Check PNG file signature (first 8 bytes)
+    // Check PNG and read file signature (first 8 bytes)
     unsigned char png_signature[8] = {137, 80, 78, 71, 13, 10, 26, 10};
     unsigned char header[8];
-    file.read(reinterpret_cast<char*>(header), 8);
-    if (std::memcmp(header, png_signature, 8) != 0) {
-        std::cerr << "Error: Invalid PNG file format." << std::endl;
-        return false;
+
+    if (pread(fd, header, 8, 0) != 8 || std::memcmp(header, png_signature, 8) != 0) {
+        std::cerr << "Mismatching image headers" << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     // Read IHDR chunk to extract image dimensions
     char ihdr_chunk[25]; // IHDR chunk is 25 bytes
-    file.read(ihdr_chunk, 25);
+    if (pread(fd, ihdr_chunk, 25, 0) != 25) {
+        std::cerr << "Error reading IHDR chunk" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     // use bit arithmetic to cherry pick bytes containing width/height data
     width = (ihdr_chunk[3] << 24) | (ihdr_chunk[4] << 16) | (ihdr_chunk[5] << 8) | ihdr_chunk[6];
     height = (ihdr_chunk[7] << 24) | (ihdr_chunk[8] << 16) | (ihdr_chunk[9] << 8) | ihdr_chunk[10];
 
-    // Move to the beginning of pixel data
-    // Start of pixel data after IHDR chunk (25 bytes) + CRC (4 bytes) + IDAT chunk header (4 bytes)
-    // Start reading at image size data
-    file.seekg(33); 
-
     // Allocate memory for pixel data
     pixels.resize(width * height);
 
-    printf("Image w: %d, h: %d\n", width, height);
+    long int fileSize;
+    if ((fileSize = lseek(fd, 0, SEEK_END)) == -1) {
+        std::cerr << "Failed to get file size" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Image w: %d, h: %d\nFile size: %ld\n", width, height, fileSize);
     printf("Beginning reading Image data.\n");
 
-    // Read pixel data (assuming RGB format)
-    for (int i = 0; i < width * height; ++i) {
-        file.read(reinterpret_cast<char*>(&pixels[i].red), sizeof(pixels[i].red));
-        file.read(reinterpret_cast<char*>(&pixels[i].green), sizeof(pixels[i].green));
-        file.read(reinterpret_cast<char*>(&pixels[i].blue), sizeof(pixels[i].blue));
+    // Read pixel data assuming RGB format
+    bool failure = false;
+    // #pragma omp parallel for shared(failure)
+    for (int i = 33; i < fileSize; i += sizeof(RGBPixel)) {
+        if (failure) {
+            continue;
+        }
+
+        // Calculate offset for current pixel
+        off_t offset = i;
+
+
+        // Read pixel data (RGB) from file at the calculated offset
+        if (pread(fd, &pixels[i], sizeof(RGBPixel), offset) != sizeof(RGBPixel)) {
+            std::cerr << "Error: Unable to read pixel data." << std::endl;
+            failure = true;
+        }
+
         // Skip alpha channel if present (assuming RGB format)
-        file.seekg(1, std::ios::cur);
+        // Update offset to skip one byte for alpha channel
+        offset++;
+        lseek(fd, offset, SEEK_SET);
     }
+
+    close(fd);
+    if (failure) exit(EXIT_FAILURE);
 
     return true;
 }
