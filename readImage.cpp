@@ -6,6 +6,8 @@
 // parallelization
 #include <omp.h>
 
+#include "timer.h"
+
 struct RGBPixel {
     unsigned char red;
     unsigned char green;
@@ -45,6 +47,9 @@ bool readPNGImage(const char* filename, std::vector<RGBPixel>& pixels, int& widt
     // Allocate memory for pixel data
     pixels.resize(width * height);
 
+    printf("Image w: %d, h: %d\n", width, height);
+    printf("Beginning reading Image data.\n");
+
     // Read pixel data (assuming RGB format)
     for (int i = 0; i < width * height; ++i) {
         file.read(reinterpret_cast<char*>(&pixels[i].red), sizeof(pixels[i].red));
@@ -58,20 +63,30 @@ bool readPNGImage(const char* filename, std::vector<RGBPixel>& pixels, int& widt
 }
 
 int main() {
+    double start, end;
+
     const char* filename = "./test-images/green-apple.png"; // Replace with your PNG image file path
     std::vector<RGBPixel> pixels;
     int width, height;
 
-    if (readPNGImage(filename, pixels, width, height)) {
-        // Example: Print the first 10 pixel values
-        std::cout << "First 10 pixel values: ";
-        for (int i = 0; i < 10; ++i) {
-            std::cout << static_cast<int>(pixels[i].red) << " "
-                      << static_cast<int>(pixels[i].green) << " "
-                      << static_cast<int>(pixels[i].blue) << " ";
-        }
-        std::cout << std::endl;
+    GET_TIME(start);
+    bool res = readPNGImage(filename, pixels, width, height);
+    GET_TIME(end);
+
+    if (!res) {
+        printf("Image reading failed\n");
+        exit(EXIT_FAILURE);
     }
+
+
+    printf("Image loaded\nLoading took %fs / %fms\n", (end - start), (end - start) * 1000);
+    std::cout << "First 10 pixel values: ";
+    for (int i = 0; i < 10; ++i) {
+        std::cout << static_cast<int>(pixels[i].red) << " "
+                    << static_cast<int>(pixels[i].green) << " "
+                    << static_cast<int>(pixels[i].blue) << " ";
+    }
+    std::cout << std::endl;
 
     return 0;
 }
