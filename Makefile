@@ -1,0 +1,5 @@
+CC = g++
+CC_FLAGS = -g
+
+readImage: readImage.cpp
+	$(CC) $(CC_FLAGS) readImage.cpp -o readImage
