@@ -52,6 +52,29 @@ int compareHeaders(unsigned char header[], std::string headerType) {
     }
 }
 
+int byteArrayToInt(unsigned char byteArr[], int len) {
+int result = 0;
+
+    for (int i = 0; i < len; i++) {
+        std::cout << (int) byteArr[i] << std::endl;
+        result += (int) byteArr[i];
+    }
+
+    return result;
+}
+
+void printChunkInfo(unsigned char size[], unsigned char chunkHeader[]) {
+    int sizeBytes = byteArrayToInt(size, 4);
+
+    std::cout << "----------" << std::endl;
+    std::cout << "Chunk header: ";
+    for (int i = 0; i < 4; i++) {
+        std::cout << chunkHeader[i];
+    }
+    std::cout << std::endl << "Chunk size (bytes): " << sizeBytes << std::endl;
+    std::cout << std::endl << "----------" << std::endl;
+}
+
 bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &width, int &height)
 {
     int fd = open(filename, O_RDONLY);
@@ -87,16 +110,10 @@ bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &widt
             exit(EXIT_FAILURE);
         }
 
-        std::cout << "----------" << std::endl;
-        std::cout << "Chunk header: ";
-        for (char letter: chunkHeader) {
-            std::cout << letter << " ";
-        }
-        std::cout << std::endl << "Chunk size: ";
-        for (int i = 0; i < 4; ++i) {
-            std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(size[i]) << " ";
-        };
-        std::cout << std::endl << "----------" << std::endl;
+        // print size and chunk name
+        printChunkInfo(size, chunkHeader);
+
+        
 
         break;
     }
