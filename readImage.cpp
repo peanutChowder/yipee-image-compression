@@ -55,17 +55,14 @@ int compareHeaders(unsigned char header[], std::string headerType) {
 int byteArrayToInt(unsigned char byteArr[], int len) {
 int result = 0;
 
-    for (int i = 0; i < len; i++) {
-        std::cout << (int) byteArr[i] << std::endl;
-        result += (int) byteArr[i];
+    for (int i = 0; i < 4; ++i) {
+        // Assume big endian, bit shift each hex entry and cast to int
+        result += static_cast<int>(byteArr[i]<<(8*(3-i)));
     }
-
     return result;
 }
 
-void printChunkInfo(unsigned char size[], unsigned char chunkHeader[]) {
-    int sizeBytes = byteArrayToInt(size, 4);
-
+void printChunkInfo(int sizeBytes, unsigned char chunkHeader[]) {
     std::cout << "----------" << std::endl;
     std::cout << "Chunk header: ";
     for (int i = 0; i < 4; i++) {
@@ -95,7 +92,7 @@ bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &widt
 
     bool reachedIDAT = false;
     int offset = 8;
-    while (!reachedIDAT) {
+    for (int i =0; i < 6; i++) {
         unsigned char size[4], chunkHeader[4];
 
         if (pread(fd, size, 4, offset) != 4)
@@ -110,12 +107,13 @@ bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &widt
             exit(EXIT_FAILURE);
         }
 
+        int sizeBytes = byteArrayToInt(size, 4);
         // print size and chunk name
-        printChunkInfo(size, chunkHeader);
+        printChunkInfo(sizeBytes, chunkHeader);
 
-        
 
-        break;
+        offset += sizeBytes + 12;
+        std::cout << "offset: " << offset << std::endl;
     }
 
     // // Read IHDR chunk to extract image dimensions
