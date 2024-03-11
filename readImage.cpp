@@ -64,12 +64,13 @@ int result = 0;
 
 void printChunkInfo(int sizeBytes, unsigned char chunkHeader[]) {
     std::cout << "----------" << std::endl;
-    std::cout << "Chunk header: ";
-    for (int i = 0; i < 4; i++) {
-        std::cout << chunkHeader[i];
-    }
+    std::cout << "Chunk header: " << chunkHeader << std::endl;
     std::cout << std::endl << "Chunk size (bytes): " << sizeBytes << std::endl;
     std::cout << std::endl << "----------" << std::endl;
+}
+
+void readIDAT(int start, int size) {
+
 }
 
 bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &width, int &height)
@@ -93,7 +94,7 @@ bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &widt
     bool reachedIDAT = false;
     int offset = 8;
     for (int i =0; i < 6; i++) {
-        unsigned char size[4], chunkHeader[4];
+        unsigned char size[4], chunkHeader[5];
 
         if (pread(fd, size, 4, offset) != 4)
         {
@@ -111,6 +112,9 @@ bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &widt
         // print size and chunk name
         printChunkInfo(sizeBytes, chunkHeader);
 
+        if (strcmp((char *) chunkHeader, "IDAT") == 0) {
+            std::cout << "IDAT FOUND" << std::endl;
+        }
 
         offset += sizeBytes + 12; // 12 bytes reserved for chunk metadata (size, name, etc)
     }
