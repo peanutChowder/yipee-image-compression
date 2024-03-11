@@ -11,16 +11,27 @@
 // parallelization
 #include <omp.h>
 
-
-#include <iomanip> 
+#include <iomanip>
 
 #include "timer.h"
 
 // PNG chunk headers
-#define PNG_HEADER {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}
-#define IHDR_HEADER {0x49, 0x48, 0x44, 0x52}
-#define IDAT_HEADER {0x49, 0x44, 0x41, 0x54}
-#define IEND_HEADER {0x49, 0x45, 0x4e, 0x44}
+#define PNG_HEADER                                     \
+    {                                                  \
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a \
+    }
+#define IHDR_HEADER            \
+    {                          \
+        0x49, 0x48, 0x44, 0x52 \
+    }
+#define IDAT_HEADER            \
+    {                          \
+        0x49, 0x44, 0x41, 0x54 \
+    }
+#define IEND_HEADER            \
+    {                          \
+        0x49, 0x45, 0x4e, 0x44 \
+    }
 
 struct RGBPixel
 {
@@ -29,48 +40,71 @@ struct RGBPixel
     unsigned char blue;
 };
 
-int compareHeaders(unsigned char header[], std::string headerType) {
-    if (headerType == "PNG") {
+int compareHeaders(unsigned char header[], std::string headerType)
+{
+    if (headerType == "PNG")
+    {
         unsigned char pngHeader[8] = PNG_HEADER;
         return std::memcmp(header, pngHeader, 8);
-
-    } else if (headerType == "IHDR") {
+    }
+    else if (headerType == "IHDR")
+    {
         unsigned char ihdrHeader[4] = IHDR_HEADER;
         return std::memcmp(header, ihdrHeader, 4);
-
-    } else if (headerType == "IDAT") {
+    }
+    else if (headerType == "IDAT")
+    {
         unsigned char idatHeader[4] = IDAT_HEADER;
         return std::memcmp(header, idatHeader, 4);
-
-    } else if (headerType == "IEND") {
+    }
+    else if (headerType == "IEND")
+    {
         unsigned char iendHeader[4] = IEND_HEADER;
         return std::memcmp(header, iendHeader, 4);
-
-    } else {
+    }
+    else
+    {
         std::cerr << "Invalid header supplied" << std::endl;
         exit(EXIT_FAILURE);
     }
 }
 
-int byteArrayToInt(unsigned char byteArr[], int len) {
-int result = 0;
+int byteArrayToInt(unsigned char byteArr[], int len)
+{
+    int result = 0;
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i)
+    {
         // Assume big endian, bit shift each hex entry and cast to int
-        result += static_cast<int>(byteArr[i]<<(8*(3-i)));
+        result += static_cast<int>(byteArr[i] << (8 * (3 - i)));
     }
     return result;
 }
 
-void printChunkInfo(int sizeBytes, unsigned char chunkHeader[]) {
+void printChunkInfo(int sizeBytes, unsigned char chunkHeader[])
+{
     std::cout << "----------" << std::endl;
     std::cout << "Chunk header: " << chunkHeader << std::endl;
-    std::cout << std::endl << "Chunk size (bytes): " << sizeBytes << std::endl;
-    std::cout << std::endl << "----------" << std::endl;
+    std::cout << std::endl
+              << "Chunk size (bytes): " << sizeBytes << std::endl;
+    std::cout << std::endl
+              << "----------" << std::endl;
 }
 
-void readIDAT(int start, int size) {
+void readIDAT(int fd, int start, int size)
+{ 
+    char data[5];
+    for (int i = 0; (i * 4) < size; i++)
+    {
+        pread(fd, &(data), 4, start + (i * 4));
 
+        std::cout << "Data: ";
+        for (int j = 0; j < 4; j++)
+        {
+            std::cout << data[j] << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
 bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &width, int &height)
@@ -93,7 +127,8 @@ bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &widt
 
     bool reachedIDAT = false;
     int offset = 8;
-    for (int i =0; i < 6; i++) {
+    for (int i = 0; i < 6; i++)
+    {
         unsigned char size[4], chunkHeader[5];
 
         if (pread(fd, size, 4, offset) != 4)
@@ -112,8 +147,9 @@ bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &widt
         // print size and chunk name
         printChunkInfo(sizeBytes, chunkHeader);
 
-        if (strcmp((char *) chunkHeader, "IDAT") == 0) {
-            std::cout << "IDAT FOUND" << std::endl;
+        if (strcmp((char *)chunkHeader, "IDAT") == 0)
+        {
+            readIDAT(fd, offset, sizeBytes);
         }
 
         offset += sizeBytes + 12; // 12 bytes reserved for chunk metadata (size, name, etc)
