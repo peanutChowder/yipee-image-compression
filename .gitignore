@@ -3,3 +3,6 @@ readImage
 
 # vscode
 .vscode/
+
+# temporary files
+temp.cpp
