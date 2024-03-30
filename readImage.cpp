@@ -1,3 +1,7 @@
+// display images
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 #include <iostream>
 
 #include <vector>
@@ -13,6 +17,9 @@
 
 #include <iomanip>
 
+
+
+// timing execution time
 #include "timer.h"
 
 // PNG chunk headers
@@ -96,6 +103,19 @@ void readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA
     }
 }
 
+bool readIHDR(int fd, int start, int size, int &pixelWidth, int &pixelHeight) {
+    unsigned char widthBuff[4], heightBuff[4];
+
+    // 'start' begins at the start of the IHDR chunk.
+    // we skip the first 8 bytes (chunk name and chunk size) to get the width.
+    // we skip another 4 bytes to get the height, since image width & height are 4 bytes each.
+    pread(fd, &widthBuff, 4, start + 8);
+    pread(fd, &heightBuff, 4, start + 12);
+
+    pixelWidth = byteArrayToInt(widthBuff, 4);
+    pixelHeight = byteArrayToInt(heightBuff, 4);
+}
+
 bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, int &width, int &height)
 {
     int fd = open(filename, O_RDONLY);
@@ -116,6 +136,8 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
 
     bool reachedIDAT = false;
     int offset = 8;
+    width = -1;
+    height = -1;
     for (int i = 0; i < 6; i++)
     {
         unsigned char size[4], chunkHeader[5];
@@ -136,6 +158,10 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
         // print size and chunk name
         printChunkInfo(sizeBytes, chunkHeader);
 
+        if (strcmp((char *) chunkHeader, "IHDR") == 0) {
+            readIHDR(fd, offset, sizeBytes, width, height);
+        }
+
         if (strcmp((char *)chunkHeader, "IDAT") == 0)
         {
             readIDAT(fd, offset, sizeBytes, imageRGBA);
@@ -144,7 +170,64 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
         offset += sizeBytes + 12; // 12 bytes reserved for chunk metadata (size, name, etc)
     }
 
+    // ensure we obtained the width and height from the IHDR chunk
+    if (width == -1 || height == -1) {
+        std::cerr << "Failed to get image height and width from IHDR" << std::endl;
+        return false;
+    }
+
     return true;
+}
+
+void displayRGBA(const std::vector<unsigned char>& rgbaData, int width, int height) {
+    // Initialize GLFW
+    if (!glfwInit()) {
+        fprintf(stderr, "Failed to initialize GLFW\n");
+        return;
+    }
+
+    // Create a windowed mode window and its OpenGL context
+    GLFWwindow* window = glfwCreateWindow(width, height, "Pixels", NULL, NULL);
+    if (!window) {
+        glfwTerminate();
+        fprintf(stderr, "Failed to create GLFW window\n");
+        return;
+    }
+
+    // Make the window's context current
+    glfwMakeContextCurrent(window);
+
+    // Initialize GLEW
+    if (glewInit() != GLEW_OK) {
+        fprintf(stderr, "Failed to initialize GLEW\n");
+        return;
+    }
+
+    // Main loop
+    while (!glfwWindowShouldClose(window)) {
+        // Clear the framebuffer
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        // Draw pixels from rgbaData
+        glBegin(GL_POINTS);
+        for (int i = 0; i < width * height; ++i) {
+            int index = 4 * i;
+            glColor4ub(rgbaData[index], rgbaData[index + 1], rgbaData[index + 2], rgbaData[index + 3]);
+            float x = (i % width) / static_cast<float>(width) * 2.0f - 1.0f;
+            float y = (i / width) / static_cast<float>(height) * 2.0f - 1.0f;
+            glVertex2f(x, y);
+        }
+        glEnd();
+
+        // Swap front and back buffers
+        glfwSwapBuffers(window);
+
+        // Poll for and process events
+        glfwPollEvents();
+    }
+
+    // Terminate GLFW
+    glfwTerminate();
 }
 
 int main()
@@ -166,6 +249,8 @@ int main()
     }
 
     printf("Image loaded\nLoading took %fs / %fms\n", (end - start), (end - start) * 1000);
+    printf("Image pixels: %d width x %d\n height", width, height);
+
     // std::cout << "First 10 pixel values: ";
     // for (int i = 0; i < 10; ++i)
     // {
