@@ -33,13 +33,6 @@
         0x49, 0x45, 0x4e, 0x44 \
     }
 
-struct RGBPixel
-{
-    unsigned char red;
-    unsigned char green;
-    unsigned char blue;
-};
-
 int compareHeaders(unsigned char header[], std::string headerType)
 {
     if (headerType == "PNG")
@@ -91,23 +84,19 @@ void printChunkInfo(int sizeBytes, unsigned char chunkHeader[])
               << "----------" << std::endl;
 }
 
-void readIDAT(int fd, int start, int size)
+void readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA)
 { 
-    char data[5];
-    for (int i = 0; (i * 4) < size; i++)
+    unsigned char data;
+    for (int i = 0; i < size; i++)
     {
-        pread(fd, &(data), 4, start + (i * 4));
+        pread(fd, &data, 1, start + i);
 
-        std::cout << "Data: ";
-        for (int j = 0; j < 4; j++)
-        {
-            std::cout << data[j] << " ";
-        }
-        std::cout << std::endl;
+        // add data to our RGBA vector
+        imageRGBA.push_back(data);
     }
 }
 
-bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &width, int &height)
+bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, int &width, int &height)
 {
     int fd = open(filename, O_RDONLY);
 
@@ -149,7 +138,7 @@ bool readPNGImage(const char *filename, std::vector<RGBPixel> &pixels, int &widt
 
         if (strcmp((char *)chunkHeader, "IDAT") == 0)
         {
-            readIDAT(fd, offset, sizeBytes);
+            readIDAT(fd, offset, sizeBytes, imageRGBA);
         }
 
         offset += sizeBytes + 12; // 12 bytes reserved for chunk metadata (size, name, etc)
@@ -163,11 +152,11 @@ int main()
     double start, end;
 
     const char *filename = "./test-images/green-apple.png"; // Replace with your PNG image file path
-    std::vector<RGBPixel> pixels;
+    std::vector<unsigned char> imageRGBA;
     int width, height;
 
     GET_TIME(start);
-    bool res = readPNGImage(filename, pixels, width, height);
+    bool res = readPNGImage(filename, imageRGBA, width, height);
     GET_TIME(end);
 
     if (!res)
