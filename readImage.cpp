@@ -91,16 +91,20 @@ void printChunkInfo(int sizeBytes, unsigned char chunkHeader[])
               << "----------" << std::endl;
 }
 
-void readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA)
+bool readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA)
 { 
     unsigned char data;
     for (int i = 0; i < size; i++)
     {
-        pread(fd, &data, 1, start + i);
+         if (pread(fd, &data, 1, start + i) != 1) {
+            return false;
+         }
 
         // add data to our RGBA vector
         imageRGBA.push_back(data);
     }
+
+    return true;
 }
 
 bool readIHDR(int fd, int start, int size, int &pixelWidth, int &pixelHeight) {
@@ -109,11 +113,18 @@ bool readIHDR(int fd, int start, int size, int &pixelWidth, int &pixelHeight) {
     // 'start' begins at the start of the IHDR chunk.
     // we skip the first 8 bytes (chunk name and chunk size) to get the width.
     // we skip another 4 bytes to get the height, since image width & height are 4 bytes each.
-    pread(fd, &widthBuff, 4, start + 8);
-    pread(fd, &heightBuff, 4, start + 12);
+    if (pread(fd, &widthBuff, 4, start + 8) != 4) {
+        return false;
+    }
+    if (pread(fd, &heightBuff, 4, start + 12) != 4) {
+        return false;
+    }
+    
 
     pixelWidth = byteArrayToInt(widthBuff, 4);
     pixelHeight = byteArrayToInt(heightBuff, 4);
+
+    return true;
 }
 
 bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, int &width, int &height)
@@ -165,12 +176,22 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
         printChunkInfo(sizeBytes, chunkHeader);
 
         if (strcmp((char *) chunkHeader, "IHDR") == 0) {
-            readIHDR(fd, offset, sizeBytes, width, height);
+            bool success = readIHDR(fd, offset, sizeBytes, width, height);
+
+            if (!success) {
+                std::cerr << "Error reading IHDR" << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
 
         if (strcmp((char *)chunkHeader, "IDAT") == 0)
         {
-            readIDAT(fd, offset, sizeBytes, imageRGBA);
+            bool success = readIDAT(fd, offset, sizeBytes, imageRGBA);
+
+            if (!success) {
+                std::cerr << "Error reading IDAT" << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
 
         if (strcmp((char *) chunkHeader, "IEND") == 0 || sizeBytes == 0) {
