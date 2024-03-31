@@ -189,7 +189,7 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
     return true;
 }
 
-void displayRGBA(const std::vector<unsigned char>& rgbaData, int width, int height) {
+void displayRGBAImage(const std::vector<unsigned char>& rgbaData, int width, int height) {
     // Initialize GLFW
     if (!glfwInit()) {
         fprintf(stderr, "Failed to initialize GLFW\n");
@@ -220,7 +220,9 @@ void displayRGBA(const std::vector<unsigned char>& rgbaData, int width, int heig
 
         // Draw pixels from rgbaData
         glBegin(GL_POINTS);
-        for (int i = 0; i < width * height; ++i) {
+        // TODO: temporary solution to view uncompressed data.
+        // uses incorrect x/y calculation
+        for (int i = 0; i < rgbaData.size(); ++i) {
             int index = 4 * i;
             glColor4ub(rgbaData[index], rgbaData[index + 1], rgbaData[index + 2], rgbaData[index + 3]);
             float x = (i % width) / static_cast<float>(width) * 2.0f - 1.0f;
@@ -244,7 +246,8 @@ int main()
 {
     double start, end;
 
-    const char *filename = "./test-images/green-apple.png"; // Replace with your PNG image file path
+    const char *filename = "./test-images/red-apple300x300.png"; 
+
     std::vector<unsigned char> imageRGBA;
     int width, height;
 
@@ -259,16 +262,12 @@ int main()
     }
 
     printf("Image loaded\nLoading took %fs / %fms\n", (end - start), (end - start) * 1000);
-    printf("Image pixels: %d width x %d\n height", width, height);
+    printf("Image pixels: %d width x %d height\n", width, height);
 
-    // std::cout << "First 10 pixel values: ";
-    // for (int i = 0; i < 10; ++i)
-    // {
-    //     std::cout << static_cast<int>(pixels[i].red) << " "
-    //               << static_cast<int>(pixels[i].green) << " "
-    //               << static_cast<int>(pixels[i].blue) << " ";
-    // }
-    // std::cout << std::endl;
+    std::cout << "length: " << imageRGBA.size() << std::endl;
+
+    displayRGBAImage(imageRGBA, 300, 300);
+
 
     return 0;
 }
