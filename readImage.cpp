@@ -135,12 +135,18 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
     }
 
     bool reachedIDAT = false;
-    int offset = 8;
+    int offset = 8; // First 8 bytes determine the png image format -- we already checked this
     width = -1;
     height = -1;
-    for (int i = 0; i < 6; i++)
+
+    // Iterate over file until we encounter the IEND chunk or
+    // the start of the chunk indicates a 0 byte length.
+    // The IEND chunk should normally have a size of 0 bytes.
+    while (1)
     {
         unsigned char size[4], chunkHeader[5];
+
+        std::cout << offset << std::endl;
 
         if (pread(fd, size, 4, offset) != 4)
         {
@@ -165,6 +171,10 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
         if (strcmp((char *)chunkHeader, "IDAT") == 0)
         {
             readIDAT(fd, offset, sizeBytes, imageRGBA);
+        }
+
+        if (strcmp((char *) chunkHeader, "IEND") == 0 || sizeBytes == 0) {
+            break;
         }
 
         offset += sizeBytes + 12; // 12 bytes reserved for chunk metadata (size, name, etc)
