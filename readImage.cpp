@@ -17,10 +17,10 @@
 
 #include <iomanip>
 
-
-
 // timing execution time
 #include "timer.h"
+
+#include "decompressIDAT.h"
 
 // PNG chunk headers
 #define PNG_HEADER                                     \
@@ -269,11 +269,11 @@ int main()
 
     const char *filename = "./test-images/red-apple300x300.png"; 
 
-    std::vector<unsigned char> imageRGBA;
+    std::vector<unsigned char> compressedIDAT;
     int width, height;
 
     GET_TIME(start);
-    bool res = readPNGImage(filename, imageRGBA, width, height);
+    bool res = readPNGImage(filename, compressedIDAT, width, height);
     GET_TIME(end);
 
     if (!res)
@@ -285,9 +285,11 @@ int main()
     printf("Image loaded\nLoading took %fs / %fms\n", (end - start), (end - start) * 1000);
     printf("Image pixels: %d width x %d height\n", width, height);
 
-    std::cout << "length: " << imageRGBA.size() << std::endl;
+    std::cout << "length: " << compressedIDAT.size() << std::endl;
 
-    displayRGBAImage(imageRGBA, 300, 300);
+    std::vector<unsigned char> decompressedIDAT =  decompressIDAT(compressedIDAT);
+
+    displayRGBAImage(decompressedIDAT, 300, 300);
 
 
     return 0;
