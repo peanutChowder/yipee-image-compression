@@ -318,7 +318,6 @@ int main()
 
     std::cout << "Decompressing data..." << std::endl;
     decompressIDAT(compressedIDAT, decompressedIDAT);
-    // decompressedIDAT.erase(decompressedIDAT.begin() + width * height * 4, decompressedIDAT.end());
 
     std::cout << "============================" << std::endl;
     std::cout << "Decompression results:" << std::endl;
