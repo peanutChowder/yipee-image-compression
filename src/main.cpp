@@ -13,10 +13,10 @@ int main()
     const char *filename = "../test-images/red-apple300x300.png"; 
 
     std::vector<unsigned char> compressedIDAT, decompressedIDAT;
-    int width, height;
+    struct ihdr ihdrData;
 
     GET_TIME(start);
-    bool res = readPNGImage(filename, compressedIDAT, width, height);
+    bool res = readPNGImage(filename, compressedIDAT, ihdrData);
     GET_TIME(end);
 
     if (!res)
@@ -26,7 +26,7 @@ int main()
     }
 
     printf("Image loaded\nLoading took %fs / %fms\n", (end - start), (end - start) * 1000);
-    printf("Image pixels: %d width x %d height\n", width, height);
+    printf("Image pixels: %d width x %d height\n", ihdrData.width, ihdrData.height);
 
     std::cout << "Decompressing data..." << std::endl;
     decompressIDAT(compressedIDAT, decompressedIDAT);
@@ -36,7 +36,7 @@ int main()
     std::cout << "Compressed len: " << compressedIDAT.size() << std::endl;
     std::cout << "Decompressed len: " << decompressedIDAT.size() << std::endl;
 
-    displayDecompressedImage(decompressedIDAT, width, height);
+    displayDecompressedImage(decompressedIDAT, ihdrData.width, ihdrData.height);
 
 
     return 0;

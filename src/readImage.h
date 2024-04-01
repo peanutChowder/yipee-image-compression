@@ -18,6 +18,14 @@
         0x49, 0x45, 0x4e, 0x44 \
     }
 
+struct ihdr {
+    int width;
+    int height;
+    int channelDepth;
+    int colorType;
+    int compressionMethod;
+};
+
 int compareHeaders(unsigned char header[], std::string headerType);
 
 int byteArrayToInt(unsigned char byteArr[], int len);
@@ -38,8 +46,8 @@ void printChunkInfo(int sizeBytes, int offset, unsigned char chunkHeader[]);
 */
 bool readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA);
 
-bool readIHDR(int fd, int start, int size, int &pixelWidth, int &pixelHeight, int &depth, int &colorType, int &compressionMethod);
+bool readIHDR(int fd, int start, int size, struct ihdr &ihdrData);
 
-bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, int &width, int &height);
+bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, struct ihdr &ihdrData);
 
 

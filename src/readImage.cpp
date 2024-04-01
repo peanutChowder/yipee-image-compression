@@ -98,7 +98,7 @@ bool readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA
     return true;
 }
 
-bool readIHDR(int fd, int start, int size, int &pixelWidth, int &pixelHeight, int &depth, int &colorType, int &compressionMethod) {
+bool readIHDR(int fd, int start, int size, struct ihdr &ihdrData) {
     unsigned char widthBuff[4], heightBuff[4];
 
     // 'start' begins at the start of the IHDR chunk.
@@ -112,27 +112,27 @@ bool readIHDR(int fd, int start, int size, int &pixelWidth, int &pixelHeight, in
     }
 
     // get bit depth per channel (1 byte)
-    if (pread(fd, &depth, 1, start + 16) != 1) {
+    if (pread(fd, &ihdrData.channelDepth, 1, start + 16) != 1) {
         return false;
     }
 
     // get color type (1 byte)
-    if (pread(fd, &colorType, 1, start + 17) != 1) {
+    if (pread(fd, &ihdrData.colorType, 1, start + 17) != 1) {
         return false;
     }
 
     // get compression method (1 byte)
-    if (pread(fd, &colorType, 1, start + 18) != 1) {
+    if (pread(fd, &ihdrData.compressionMethod, 1, start + 18) != 1) {
         return false;
     }    
 
-    pixelWidth = byteArrayToInt(widthBuff, 4);
-    pixelHeight = byteArrayToInt(heightBuff, 4);
+    ihdrData.width = byteArrayToInt(widthBuff, 4);
+    ihdrData.height = byteArrayToInt(heightBuff, 4);
 
     return true;
 }
 
-bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, int &width, int &height)
+bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, struct ihdr &ihdrData)
 {
     int fd = open(filename, O_RDONLY);
 
@@ -152,9 +152,14 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
 
     bool reachedIDAT = false;
     int offset = 8; // First 8 bytes determine the png image format -- we already checked this
-    int depth, colorType, compressionMethod; // metadata that we will get from the IHDR chunk
-    width = -1;
-    height = -1;
+
+    // Set all ihdr fields to -1. We check at the end if any values are still -1. If so, we return
+    // in error.
+    ihdrData.width = -1;
+    ihdrData.height = -1;
+    ihdrData.channelDepth = -1;
+    ihdrData.colorType = -1;
+    ihdrData.compressionMethod = -1;
 
     // Iterate over file until we encounter the IEND chunk or
     // the start of the chunk indicates a 0 byte length.
@@ -180,7 +185,7 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
         printChunkInfo(sizeBytes, offset, chunkHeader);
 
         if (strcmp((char *) chunkHeader, "IHDR") == 0) {
-            bool success = readIHDR(fd, offset, sizeBytes, width, height, depth, colorType, compressionMethod);
+            bool success = readIHDR(fd, offset, sizeBytes, ihdrData);
 
             if (!success) {
                 std::cerr << "Error reading IHDR" << std::endl;
@@ -205,9 +210,9 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
         offset += sizeBytes + 12; // 12 bytes reserved for chunk metadata (size, name, CRC)
     }
 
-    // ensure we obtained the width and height from the IHDR chunk
-    if (width == -1 || height == -1) {
-        std::cerr << "Failed to get image height and width from IHDR" << std::endl;
+    // ensure all IHDR values are initialized
+    if (ihdrData.width == -1 || ihdrData.height == -1 || ihdrData.channelDepth == -1 || ihdrData.colorType == -1 || ihdrData.compressionMethod == -1) {
+        std::cerr << "Failed to get metadata from IHDR" << std::endl;
         return false;
     }
 
