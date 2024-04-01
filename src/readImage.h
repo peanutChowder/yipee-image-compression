@@ -38,7 +38,7 @@ void printChunkInfo(int sizeBytes, int offset, unsigned char chunkHeader[]);
 */
 bool readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA);
 
-bool readIHDR(int fd, int start, int size, int &pixelWidth, int &pixelHeight);
+bool readIHDR(int fd, int start, int size, int &pixelWidth, int &pixelHeight, int &depth, int &colorType, int &compressionMethod);
 
 bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, int &width, int &height);
 
