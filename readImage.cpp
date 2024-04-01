@@ -94,8 +94,9 @@ void printChunkInfo(int sizeBytes, unsigned char chunkHeader[])
 /**
  * Appends IDAT chunk data into the provided vector.
  * 
- * Startsfrom the actual chunk start, i.e. including the IDAT chunk's metadata (byte size and IDAT tag). 
- * The final 4 bytes for the CRC are left out
+ * Starts from the actual chunk start, i.e. including the IDAT chunk's metadata (byte size and IDAT tag). 
+ * The provided size should NOT include the 4 CRC bytes at the end. PNG chunk size metadata does not count
+ * the CRC bytes anyways.
  * 
  * @param fd The file descriptor of the png
  * @param start The starting point of the chunk including its header
@@ -105,6 +106,9 @@ void printChunkInfo(int sizeBytes, unsigned char chunkHeader[])
 bool readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA)
 { 
     unsigned char data;
+
+    // Skip the chunk header (size + tag).
+    start += 8;
     for (int i = 0; i < size; i++)
     {
          if (pread(fd, &data, 1, start + i) != 1) {
