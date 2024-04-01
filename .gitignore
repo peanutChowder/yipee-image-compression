@@ -1,6 +1,6 @@
 # executables & object files
 *.o
-readImage
+main
 
 # vscode
 .vscode/
