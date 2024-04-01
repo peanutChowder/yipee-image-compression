@@ -81,12 +81,13 @@ int byteArrayToInt(unsigned char byteArr[], int len)
     return result;
 }
 
-void printChunkInfo(int sizeBytes, unsigned char chunkHeader[])
+void printChunkInfo(int sizeBytes, int offset, unsigned char chunkHeader[])
 {
     std::cout << "----------" << std::endl;
     std::cout << "Chunk header: " << chunkHeader << std::endl;
     std::cout << std::endl
               << "Chunk size (bytes): " << sizeBytes << std::endl;
+    std::cout << "Starting at: " << offset << " bytes" << std::endl;
     std::cout << std::endl
               << "----------" << std::endl;
 }
@@ -172,8 +173,6 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
     {
         unsigned char size[4], chunkHeader[5];
 
-        std::cout << offset << std::endl;
-
         if (pread(fd, size, 4, offset) != 4)
         {
             std::cerr << "Error reading size of chunk" << std::endl;
@@ -188,7 +187,7 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
 
         int sizeBytes = byteArrayToInt(size, 4);
         // print size and chunk name
-        printChunkInfo(sizeBytes, chunkHeader);
+        printChunkInfo(sizeBytes, offset, chunkHeader);
 
         if (strcmp((char *) chunkHeader, "IHDR") == 0) {
             bool success = readIHDR(fd, offset, sizeBytes, width, height);
@@ -213,7 +212,7 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
             break;
         }
 
-        offset += sizeBytes + 12; // 12 bytes reserved for chunk metadata (size, name, etc)
+        offset += sizeBytes + 12; // 12 bytes reserved for chunk metadata (size, name, CRC)
     }
 
     // ensure we obtained the width and height from the IHDR chunk
@@ -225,18 +224,18 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, i
     return true;
 }
 
-void displayRGBAImage(const std::vector<unsigned char>& rgbaData, int width, int height) {
+void displayDecompressedImage(const std::vector<unsigned char>& imageData, int width, int height) {
     // Initialize GLFW
     if (!glfwInit()) {
-        fprintf(stderr, "Failed to initialize GLFW\n");
+        std::cerr << "Failed to initialize GLFW" << std::endl;
         return;
     }
 
     // Create a windowed mode window and its OpenGL context
-    GLFWwindow* window = glfwCreateWindow(width, height, "Pixels", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(width, height, "Decompressed Image", NULL, NULL);
     if (!window) {
         glfwTerminate();
-        fprintf(stderr, "Failed to create GLFW window\n");
+        std::cerr << "Failed to create GLFW window" << std::endl;
         return;
     }
 
@@ -245,26 +244,40 @@ void displayRGBAImage(const std::vector<unsigned char>& rgbaData, int width, int
 
     // Initialize GLEW
     if (glewInit() != GLEW_OK) {
-        fprintf(stderr, "Failed to initialize GLEW\n");
+        std::cerr << "Failed to initialize GLEW" << std::endl;
         return;
     }
+
+    // Enable texture
+    glEnable(GL_TEXTURE_2D);
+
+    // Generate texture ID
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+
+    // Bind texture
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Upload image data to texture
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData.data());
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         // Clear the framebuffer
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Draw pixels from rgbaData
-        glBegin(GL_POINTS);
-        // TODO: temporary solution to view uncompressed data.
-        // uses incorrect x/y calculation
-        for (int i = 0; i < rgbaData.size(); ++i) {
-            int index = 4 * i;
-            glColor4ub(rgbaData[index], rgbaData[index + 1], rgbaData[index + 2], rgbaData[index + 3]);
-            float x = (i % width) / static_cast<float>(width) * 2.0f - 1.0f;
-            float y = (i / width) / static_cast<float>(height) * 2.0f - 1.0f;
-            glVertex2f(x, y);
-        }
+        // Draw textured quad
+        glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
+        glTexCoord2f(1.0f, 0.0f); glVertex2f(1.0f, -1.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex2f(1.0f, 1.0f);
+        glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, 1.0f);
         glEnd();
 
         // Swap front and back buffers
@@ -273,6 +286,9 @@ void displayRGBAImage(const std::vector<unsigned char>& rgbaData, int width, int
         // Poll for and process events
         glfwPollEvents();
     }
+
+    // Delete texture
+    glDeleteTextures(1, &textureID);
 
     // Terminate GLFW
     glfwTerminate();
@@ -284,7 +300,7 @@ int main()
 
     const char *filename = "./test-images/red-apple300x300.png"; 
 
-    std::vector<unsigned char> compressedIDAT;
+    std::vector<unsigned char> compressedIDAT, decompressedIDAT;
     int width, height;
 
     GET_TIME(start);
@@ -300,11 +316,16 @@ int main()
     printf("Image loaded\nLoading took %fs / %fms\n", (end - start), (end - start) * 1000);
     printf("Image pixels: %d width x %d height\n", width, height);
 
-    std::cout << "length: " << compressedIDAT.size() << std::endl;
+    std::cout << "Decompressing data..." << std::endl;
+    decompressIDAT(compressedIDAT, decompressedIDAT);
+    // decompressedIDAT.erase(decompressedIDAT.begin() + width * height * 4, decompressedIDAT.end());
 
-    std::vector<unsigned char> decompressedIDAT =  decompressIDAT(compressedIDAT);
+    std::cout << "============================" << std::endl;
+    std::cout << "Decompression results:" << std::endl;
+    std::cout << "Compressed len: " << compressedIDAT.size() << std::endl;
+    std::cout << "Decompressed len: " << decompressedIDAT.size() << std::endl;
 
-    displayRGBAImage(decompressedIDAT, 300, 300);
+    displayDecompressedImage(decompressedIDAT, width, height);
 
 
     return 0;
