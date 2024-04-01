@@ -1,3 +1,3 @@
 #include <vector>
 
-std::vector<unsigned char> decompressIDAT(const std::vector<unsigned char>& idatData);
+bool decompressIDAT(const std::vector<unsigned char>& compressedData, std::vector<unsigned char> &decompressedData);

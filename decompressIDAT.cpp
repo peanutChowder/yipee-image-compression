@@ -2,40 +2,42 @@
 #include <vector>
 #include <iostream>
 
-std::vector<unsigned char> decompressIDAT(const std::vector<unsigned char>& idatData) {
+#include "decompressIDAT.h"
+
+bool decompressIDAT(const std::vector<unsigned char>& compressedData, std::vector<unsigned char> &decompressedData) {
     z_stream stream;
     stream.zalloc = Z_NULL;
     stream.zfree = Z_NULL;
     stream.opaque = Z_NULL;
-    stream.avail_in = idatData.size();
-    stream.next_in = const_cast<unsigned char*>(idatData.data());
+    stream.avail_in = compressedData.size();
+    stream.next_in = const_cast<unsigned char*>(compressedData.data());
 
     // Set up the inflate stream
     if (inflateInit(&stream) != Z_OK) {
         std::cerr << "Error initializing zlib inflate stream" << std::endl;
-        return std::vector<unsigned char>();
+        return false;
     }
 
     // Create buffer to store decompressed data
-    std::vector<unsigned char> decompressedData(4096); // Initial size
+    std::vector<unsigned char> buffer(4096); // Initial size
 
     // Decompress IDAT data
-    std::vector<unsigned char> result;
     int ret;
     do {
-        stream.avail_out = decompressedData.size();
-        stream.next_out = decompressedData.data();
+        stream.avail_out = buffer.size();
+        stream.next_out = buffer.data();
         ret = inflate(&stream, Z_NO_FLUSH);
-        if (ret < 0) {
-            std::cerr << "Error decompressing IDAT data: " << ret << std::endl;
+
+        if (ret < 0 && ret != Z_STREAM_END) {
+            std::cerr << "Error decompressing IDAT data, ret status: " << ret << std::endl;
             inflateEnd(&stream);
-            return std::vector<unsigned char>();
+            return false;
         }
         // Append decompressed data to result
-        result.insert(result.end(), decompressedData.begin(), decompressedData.begin() + stream.total_out);
+        decompressedData.insert(decompressedData.end(), buffer.begin(), buffer.begin() + buffer.size() - stream.avail_out);
     } while (ret != Z_STREAM_END);
 
     // Clean up and return result
     inflateEnd(&stream);
-    return result;
+    return true;
 }
