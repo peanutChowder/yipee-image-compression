@@ -34,7 +34,9 @@ bool decompressIDAT(const std::vector<unsigned char>& compressedData, std::vecto
             return false;
         }
         // Append decompressed data to result
-        decompressedData.insert(decompressedData.end(), buffer.begin(), buffer.begin() + buffer.size() - stream.avail_out);
+        decompressedData.insert(decompressedData.end(), buffer.begin(), buffer.end() - stream.avail_out);
+        buffer.clear();
+        buffer.resize(4096);
     } while (ret != Z_STREAM_END);
 
     // Clean up and return result
