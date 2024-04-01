@@ -3,7 +3,7 @@
 #include <iostream>
 #include <algorithm>
 
-#include "decompressIDAT.h"
+#include "processImage.h"
 
 bool decompressIDAT(const std::vector<unsigned char>& compressedData, std::vector<unsigned char> &decompressedData) {
     z_stream stream;

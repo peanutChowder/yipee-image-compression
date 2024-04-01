@@ -2,7 +2,7 @@
 
 // header files
 #include "timer.h"
-#include "decompressIDAT.h"
+#include "processImage.h"
 #include "displayImage.h"
 #include "readImage.h"
 

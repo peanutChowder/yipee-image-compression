@@ -1,11 +1,11 @@
 CC = g++
 CC_FLAGS = -g
 
-main: main.cpp readImage.cpp decompressIDAT.o displayImage.o readImage.o
-	$(CC) $(CC_FLAGS) -o main main.cpp decompressIDAT.o displayImage.o readImage.o -lglfw -lGLEW -lGLU -lGL -lm -lXrandr -lXi -lX11 -lpthread -ldl -lz
+main: main.cpp readImage.cpp processImage.o displayImage.o readImage.o
+	$(CC) $(CC_FLAGS) -o main main.cpp processImage.o displayImage.o readImage.o -lglfw -lGLEW -lGLU -lGL -lm -lXrandr -lXi -lX11 -lpthread -ldl -lz
 
-decompressIDAT.o: decompressIDAT.cpp decompressIDAT.h
-	$(CC) $(CC_FLAGS) -c decompressIDAT.cpp -o decompressIDAT.o -lz
+processImage.o: processImage.cpp processImage.h
+	$(CC) $(CC_FLAGS) -c processImage.cpp -o processImage.o -lz
 
 displayImage.o: displayImage.cpp displayImage.h
 	$(CC) $(CC_FLAGS) -c displayImage.cpp -o displayImage.o -lglfw -lGLEW -lGLU -lGL -lm -lXrandr -lXi -lX11 -lpthread -ldl
