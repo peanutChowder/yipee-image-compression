@@ -1,6 +1,7 @@
 #include <zlib.h>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 #include "decompressIDAT.h"
 
@@ -41,5 +42,8 @@ bool decompressIDAT(const std::vector<unsigned char>& compressedData, std::vecto
 
     // Clean up and return result
     inflateEnd(&stream);
+
+    // perform a flip on the x axis (vertical flip) to match openGL's bottom left (0,0)
+    std::reverse(decompressedData.begin(), decompressedData.end());
     return true;
 }
