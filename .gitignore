@@ -1,4 +1,5 @@
-# executables
+# executables & object files
+*.o
 readImage
 
 # vscode
