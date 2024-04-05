@@ -58,13 +58,11 @@ int byteArrayToInt(unsigned char byteArr[], int len)
 
 void printChunkInfo(int sizeBytes, int offset, unsigned char chunkHeader[])
 {
-    std::cout << "----------" << std::endl;
+    std::cout << PRINT_DIVIDER << std::endl;
     std::cout << "Chunk header: " << chunkHeader << std::endl;
     std::cout << std::endl
               << "Chunk size (bytes): " << sizeBytes << std::endl;
     std::cout << "Starting at: " << offset << " bytes" << std::endl;
-    std::cout << std::endl
-              << "----------" << std::endl;
 }
 
 /**
@@ -96,6 +94,16 @@ bool readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA
     }
 
     return true;
+}
+
+void printIHDRSummary(struct ihdr ihdrData) {
+    std::cout << PRINT_DIVIDER << std::endl;
+    std::cout << "IHDR Summary" << std::endl;
+    std::cout << "Dimensions: " << ihdrData.width << " x " << ihdrData.height << std::endl;
+    std::cout << "Channel depth: " << ihdrData.channelDepth << std::endl;
+    std::cout << "Color type: " << ihdrData.colorType << std::endl;
+    std::cout << "Compression method: " << ihdrData.compressionMethod << std::endl;
+
 }
 
 bool readIHDR(int fd, int start, int size, struct ihdr &ihdrData) {
@@ -181,8 +189,7 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, s
         }
 
         int sizeBytes = byteArrayToInt(size, 4);
-        // print size and chunk name
-        printChunkInfo(sizeBytes, offset, chunkHeader);
+
 
         if (strcmp((char *) chunkHeader, "IHDR") == 0) {
             bool success = readIHDR(fd, offset, sizeBytes, ihdrData);
@@ -191,7 +198,12 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, s
                 std::cerr << "Error reading IHDR" << std::endl;
                 exit(EXIT_FAILURE);
             }
+
+            printIHDRSummary(ihdrData);
         }
+
+        // print size and chunk name
+        printChunkInfo(sizeBytes, offset, chunkHeader);
 
         if (strcmp((char *)chunkHeader, "IDAT") == 0)
         {
