@@ -143,7 +143,6 @@ bool readIHDR(int fd, int start, int size, struct ihdr &ihdrData) {
     ihdrData.colorType = (int) colorType;
     ihdrData.compressionMethod = (int) compressionMethod;
 
-    std::cout << "ahhh " << channelDepth << std::endl;
     return true;
 }
 
