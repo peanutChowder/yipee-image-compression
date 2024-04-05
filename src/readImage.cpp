@@ -80,13 +80,13 @@ void printChunkInfo(int sizeBytes, int offset, unsigned char chunkHeader[])
 bool readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA)
 { 
     unsigned char buffer[size];
-
+    
     // Skip the chunk header (size + tag).
     start += 8;
 
     if (pread(fd, &buffer, size, start) != size) {
-            return false;
-         }
+        return false;
+    }
 
     imageRGBA.insert(imageRGBA.end(), buffer, buffer + size);
 
