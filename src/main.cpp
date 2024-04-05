@@ -12,7 +12,7 @@ int main()
 
     const char *filename = "../test-images/red-apple300x300.png"; 
 
-    std::vector<unsigned char> compressedIDAT, decompressedIDAT;
+    std::vector<unsigned char> compressedIDAT, decompressedIDAT, defilteredIDAT;
     struct ihdr ihdrData;
 
     GET_TIME(start);
@@ -36,8 +36,10 @@ int main()
     std::cout << "Compressed len: " << compressedIDAT.size() << std::endl;
     std::cout << "Decompressed len: " << decompressedIDAT.size() << std::endl;
 
-    displayDecompressedImage(decompressedIDAT, ihdrData.width, ihdrData.height);
+    defilterIDAT(decompressedIDAT, defilteredIDAT, ihdrData.width, ihdrData.height, ihdrData.colorType, ihdrData.channelDepth);
 
+    displayDecompressedImage(defilteredIDAT, ihdrData.width, ihdrData.height);
+    
 
     return 0;
 }

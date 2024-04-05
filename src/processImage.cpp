@@ -2,6 +2,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 #include "processImage.h"
 
@@ -48,9 +49,26 @@ bool decompressIDAT(const std::vector<unsigned char>& compressedData, std::vecto
     return true;
 }
 
-bool defilterIDAT(std::vector<unsigned char> &decompressedData, int width, int height, int colorType, int channelDepth) {
+unsigned char paethPredictor(unsigned char left, unsigned char up, unsigned char leftUp) {
+    int p, pa, pb, pc;
+    p = left + up - leftUp;
+    pa = abs(p - left);
+    pb = abs(p - up);
+    pc = abs(p - leftUp);
+    if (pa <= pb && pa <= pc) {
+        return left;
+    } else if (pb <= pc) {
+        return up;
+    } else {
+        return leftUp;
+    }
+}
+
+bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsigned char> &defilteredData, int width, int height, int colorType, int channelDepth) {
     int bytesPerPixel, colWidth;
     int filter;
+    int currByteIndex;
+    int defilteredCurr, defilteredLeft, defilteredUp, defilteredLeftUp;
 
     if ((bytesPerPixel = getBytesPerPixel(colorType, channelDepth)) == -1) {
         return false;
@@ -62,8 +80,51 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, int width, int h
     for (int lineIndex = 0; lineIndex < height; lineIndex++) {
         filter = decompressedData[lineIndex * colWidth]; // get the filter which is located in the first byte of each line
 
-        for (int colIndex = 0; colIndex < colWidth; colIndex++) {
-            // TODO
+        // apply filter to current line. we skip the first byte
+        // since it is occupied by the filter data.
+        // We perform 256 modulo on each filter calc to ensure
+        // no pixel data overflow.
+        for (int colIndex = 1; colIndex < colWidth; colIndex++) { 
+            currByteIndex = lineIndex * colWidth + colIndex;
+            switch (filter) {
+                // no filter -- add byte directly
+                case 0:
+                    defilteredCurr = decompressedData[currByteIndex];
+                    break;
+
+                // sub filter: defiltered byte = curr filtered + defiltered left
+                case 1: 
+                    defilteredLeft = (colIndex == 1) ? 0 : defilteredData[currByteIndex - 1];
+                    defilteredCurr = (decompressedData[currByteIndex] + defilteredLeft) % 256;
+                    break;
+
+                // up filter: defiltered byte = curr filtered + defiltered up
+                case 2:
+                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - colWidth - 1];
+                    defilteredCurr = (decompressedData[currByteIndex] + defilteredUp) % 256; // subtract additional 1 to account for filter byte
+                    break;
+
+                // average filter: defiltered byte = curr filtered + floor((defiltered left + defiltered up) / 2)
+                case 3:
+                    defilteredLeft = (colIndex == 1) ? 0 : defilteredData[currByteIndex - 1];
+                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - colWidth - 1];
+                    defilteredCurr = (decompressedData[currByteIndex] + (defilteredLeft + defilteredUp) / 2) % 256;
+                    break;
+
+                // paeth filter: defiltered byte = curr filtered + paethPredictor(defiltered left + defiltered up + defiltered left up (diagonal))
+                case 4:
+                    defilteredLeft = (colIndex == 1) ? 0 : defilteredData[currByteIndex - 1];
+                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - colWidth - 1];
+                    defilteredLeftUp = (lineIndex == 0 || colIndex == 1) ? 0 : defilteredData[currByteIndex - colWidth - 2];
+                    defilteredCurr = (decompressedData[currByteIndex] + paethPredictor(defilteredLeft, defilteredUp, defilteredLeftUp)) % 256;
+                    break;
+
+                default:
+                    std::cerr << "Error: invalid row filter '" << filter << "'." << std::endl;
+                    break;
+            }
+
+            defilteredData.push_back(defilteredCurr);
         }
     }
 
