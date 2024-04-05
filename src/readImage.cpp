@@ -103,12 +103,14 @@ void printIHDRSummary(struct ihdr ihdrData) {
     std::cout << "Channel depth: " << ihdrData.channelDepth << std::endl;
     std::cout << "Color type: " << ihdrData.colorType << std::endl;
     std::cout << "Compression method: " << ihdrData.compressionMethod << std::endl;
+    std::cout << "Filter method: " << ihdrData.filterMethod << std::endl;
+    std::cout << "Interlace method: " << ihdrData.interlaceMethod << std::endl;
 
 }
 
 bool readIHDR(int fd, int start, int size, struct ihdr &ihdrData) {
     unsigned char widthBuff[4], heightBuff[4];
-    unsigned char channelDepth, colorType, compressionMethod;
+    unsigned char channelDepth, colorType, compressionMethod, filterMethod, interlaceMethod;
 
     // 'start' begins at the start of the IHDR chunk.
     // we skip the first 8 bytes (chunk name and chunk size) to get the width.
@@ -135,6 +137,16 @@ bool readIHDR(int fd, int start, int size, struct ihdr &ihdrData) {
         return false;
     }    
 
+    // get filter method (1 byte)
+    if (pread(fd, &filterMethod, 1, start + 19) != 1) {
+        return false;
+    }   
+
+    // get interlace method (1 byte)
+    if (pread(fd, &interlaceMethod, 1, start + 20) != 1) {
+        return false;
+    }   
+
     ihdrData.width = byteArrayToInt(widthBuff, 4);
     ihdrData.height = byteArrayToInt(heightBuff, 4);
 
@@ -142,6 +154,8 @@ bool readIHDR(int fd, int start, int size, struct ihdr &ihdrData) {
     ihdrData.channelDepth = (int) channelDepth;
     ihdrData.colorType = (int) colorType;
     ihdrData.compressionMethod = (int) compressionMethod;
+    ihdrData.filterMethod = (int) filterMethod;
+    ihdrData.interlaceMethod = (int) interlaceMethod;
 
     return true;
 }
@@ -174,6 +188,8 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, s
     ihdrData.channelDepth = -1;
     ihdrData.colorType = -1;
     ihdrData.compressionMethod = -1;
+    ihdrData.filterMethod = -1;
+    ihdrData.interlaceMethod = -1;
 
     // Iterate over file until we encounter the IEND chunk or
     // the start of the chunk indicates a 0 byte length.
@@ -229,7 +245,7 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, s
     }
 
     // ensure all IHDR values are initialized
-    if (ihdrData.width == -1 || ihdrData.height == -1 || ihdrData.channelDepth == -1 || ihdrData.colorType == -1 || ihdrData.compressionMethod == -1) {
+    if (ihdrData.width == -1 || ihdrData.height == -1 || ihdrData.channelDepth == -1 || ihdrData.colorType == -1 || ihdrData.compressionMethod == -1 || ihdrData.filterMethod == -1 || ihdrData.interlaceMethod == -1) {
         std::cerr << "Failed to get metadata from IHDR" << std::endl;
         return false;
     }

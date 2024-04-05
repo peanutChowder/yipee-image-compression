@@ -26,6 +26,8 @@ struct ihdr {
     int channelDepth;
     int colorType;
     int compressionMethod;
+    int filterMethod;
+    int interlaceMethod;
 };
 
 int compareHeaders(unsigned char header[], std::string headerType);
