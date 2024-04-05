@@ -48,7 +48,7 @@ int byteArrayToInt(unsigned char byteArr[], int len)
 {
     int result = 0;
 
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < len; ++i)
     {
         // Assume big endian, bit shift each hex entry and cast to int
         result += static_cast<int>(byteArr[i] << (8 * (3 - i)));
