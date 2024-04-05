@@ -94,28 +94,28 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
 
                 // sub filter: defiltered byte = curr filtered + defiltered left
                 case 1: 
-                    defilteredLeft = (colIndex < bytesPerPixel + 1) ? 0 : defilteredData[currByteIndex - bytesPerPixel];
+                    defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[currByteIndex - bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + defilteredLeft) % 256;
                     break;
 
                 // up filter: defiltered byte = curr filtered + defiltered up
                 case 2:
-                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - colWidth];
+                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - width * bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + defilteredUp) % 256; 
                     break;
 
                 // average filter: defiltered byte = curr filtered + floor((defiltered left + defiltered up) / 2)
                 case 3:
-                    defilteredLeft = (colIndex == 1) ? 0 : defilteredData[currByteIndex - bytesPerPixel];
-                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - colWidth];
+                    defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[currByteIndex - bytesPerPixel];
+                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - width * bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + (defilteredLeft + defilteredUp) / 2) % 256;
                     break;
 
                 // paeth filter: defiltered byte = curr filtered + paethPredictor(defiltered left + defiltered up + defiltered left up (diagonal))
                 case 4:
-                    defilteredLeft = (colIndex == 1) ? 0 : defilteredData[currByteIndex - bytesPerPixel];
-                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - colWidth];
-                    defilteredLeftUp = (lineIndex == 0 || colIndex == 1) ? 0 : defilteredData[currByteIndex - colWidth - bytesPerPixel];
+                    defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[currByteIndex - bytesPerPixel];
+                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - width * bytesPerPixel];
+                    defilteredLeftUp = (lineIndex == 0 || colIndex < bytesPerPixel) ? 0 : defilteredData[currByteIndex - width * bytesPerPixel - bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + paethPredictor(defilteredLeft, defilteredUp, defilteredLeftUp)) % 256;
                     break;
 
