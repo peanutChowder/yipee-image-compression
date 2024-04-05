@@ -108,6 +108,7 @@ void printIHDRSummary(struct ihdr ihdrData) {
 
 bool readIHDR(int fd, int start, int size, struct ihdr &ihdrData) {
     unsigned char widthBuff[4], heightBuff[4];
+    unsigned char channelDepth, colorType, compressionMethod;
 
     // 'start' begins at the start of the IHDR chunk.
     // we skip the first 8 bytes (chunk name and chunk size) to get the width.
@@ -120,23 +121,29 @@ bool readIHDR(int fd, int start, int size, struct ihdr &ihdrData) {
     }
 
     // get bit depth per channel (1 byte)
-    if (pread(fd, &ihdrData.channelDepth, 1, start + 16) != 1) {
+    if (pread(fd, &channelDepth, 1, start + 16) != 1) {
         return false;
     }
 
     // get color type (1 byte)
-    if (pread(fd, &ihdrData.colorType, 1, start + 17) != 1) {
+    if (pread(fd, &colorType, 1, start + 17) != 1) {
         return false;
     }
 
     // get compression method (1 byte)
-    if (pread(fd, &ihdrData.compressionMethod, 1, start + 18) != 1) {
+    if (pread(fd, &compressionMethod, 1, start + 18) != 1) {
         return false;
     }    
 
     ihdrData.width = byteArrayToInt(widthBuff, 4);
     ihdrData.height = byteArrayToInt(heightBuff, 4);
 
+    // single byte data can be casted to int
+    ihdrData.channelDepth = (int) channelDepth;
+    ihdrData.colorType = (int) colorType;
+    ihdrData.compressionMethod = (int) compressionMethod;
+
+    std::cout << "ahhh " << channelDepth << std::endl;
     return true;
 }
 
