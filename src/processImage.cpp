@@ -5,6 +5,15 @@
 #include <cmath>
 
 #include "processImage.h"
+#include "printUtils.h"
+
+struct FilterCounts {
+    int none = 0;
+    int sub = 0;
+    int up = 0;
+    int average = 0;
+    int paeth = 0;
+};
 
 bool decompressIDAT(const std::vector<unsigned char>& compressedData, std::vector<unsigned char> &decompressedData) {
     z_stream stream;
@@ -69,6 +78,7 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
     int filter;
     int currByteIndex;
     int defilteredCurr, defilteredCurrIndex, defilteredLeft, defilteredUp, defilteredLeftUp;
+    struct FilterCounts filterCounts;
 
     if ((bytesPerPixel = getBytesPerPixel(colorType, channelDepth)) == -1) {
         return false;
@@ -86,24 +96,30 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
         // no pixel data overflow.
         for (int colIndex = 1; colIndex < colWidth; colIndex++) { 
             currByteIndex = lineIndex * colWidth + colIndex;
-            defilteredCurrIndex = currByteIndex - lineIndex;
+            defilteredCurrIndex = currByteIndex - lineIndex; // Defiltered data does not include the 1 byte filter
 
             switch (filter) {
                 // no filter -- add byte directly
                 case 0:
                     defilteredCurr = decompressedData[currByteIndex];
+
+                    filterCounts.none += 1;
                     break;
 
                 // sub filter: defiltered byte = curr filtered + defiltered left
                 case 1: 
                     defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[defilteredCurrIndex - bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + defilteredLeft) % 256;
+
+                    filterCounts.sub += 1;
                     break;
 
                 // up filter: defiltered byte = curr filtered + defiltered up
                 case 2:
                     defilteredUp = (lineIndex == 0) ? 0 : defilteredData[defilteredCurrIndex - width * bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + defilteredUp) % 256; 
+
+                    filterCounts.up += 1;
                     break;
 
                 // average filter: defiltered byte = curr filtered + floor((defiltered left + defiltered up) / 2)
@@ -111,6 +127,8 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
                     defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[defilteredCurrIndex - bytesPerPixel];
                     defilteredUp = (lineIndex == 0) ? 0 : defilteredData[defilteredCurrIndex - width * bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + (defilteredLeft + defilteredUp) / 2) % 256;
+
+                    filterCounts.average += 1;
                     break;
 
                 // paeth filter: defiltered byte = curr filtered + paethPredictor(defiltered left + defiltered up + defiltered left up (diagonal))
@@ -119,6 +137,8 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
                     defilteredUp = (lineIndex == 0) ? 0 : defilteredData[defilteredCurrIndex - width * bytesPerPixel];
                     defilteredLeftUp = (lineIndex == 0 || colIndex < bytesPerPixel) ? 0 : defilteredData[defilteredCurrIndex - width * bytesPerPixel - bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + paethPredictor(defilteredLeft, defilteredUp, defilteredLeftUp)) % 256;
+
+                    filterCounts.paeth += 1;
                     break;
 
                 default:
@@ -129,9 +149,24 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
 
             defilteredData.push_back(defilteredCurr);
         }
+
+        
     }
 
+    printFilterSummary(filterCounts);
+
     return true;
+}
+
+void printFilterSummary(struct FilterCounts filterCounts) {
+    std::cout << PRINT_DIVIDER << std::endl;
+    std::cout << "Filter summary: " << std::endl;
+    std::cout << "\tNone: " << filterCounts.none << std::endl;
+    std::cout << "\tSub: " << filterCounts.sub << std::endl;
+    std::cout << "\tUp: " << filterCounts.up << std::endl;
+    std::cout << "\tAverage: " << filterCounts.average << std::endl;
+    std::cout << "\tPaeth: " << filterCounts.paeth << std::endl;
+
 }
 
 void printGetFilterErr(int filter, int lineIndex, int colWidth, std::vector<unsigned char> decompressedData) {

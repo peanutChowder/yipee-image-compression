@@ -6,4 +6,6 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
 
 int getBytesPerPixel(int colorType, int channelDepth);
 
+void printFilterSummary(struct FilterCounts filterCounts);
+
 void printGetFilterErr(int filter, int lineIndex, int colWidth, std::vector<unsigned char> decompressedData);
