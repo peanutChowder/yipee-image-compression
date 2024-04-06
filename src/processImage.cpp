@@ -68,7 +68,7 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
     int bytesPerPixel, colWidth;
     int filter;
     int currByteIndex;
-    int defilteredCurr, defilteredLeft, defilteredUp, defilteredLeftUp;
+    int defilteredCurr, defilteredCurrIndex, defilteredLeft, defilteredUp, defilteredLeftUp;
 
     if ((bytesPerPixel = getBytesPerPixel(colorType, channelDepth)) == -1) {
         return false;
@@ -86,6 +86,8 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
         // no pixel data overflow.
         for (int colIndex = 1; colIndex < colWidth; colIndex++) { 
             currByteIndex = lineIndex * colWidth + colIndex;
+            defilteredCurrIndex = currByteIndex - lineIndex;
+
             switch (filter) {
                 // no filter -- add byte directly
                 case 0:
@@ -94,28 +96,28 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
 
                 // sub filter: defiltered byte = curr filtered + defiltered left
                 case 1: 
-                    defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[currByteIndex - bytesPerPixel];
+                    defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[defilteredCurrIndex - bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + defilteredLeft) % 256;
                     break;
 
                 // up filter: defiltered byte = curr filtered + defiltered up
                 case 2:
-                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - width * bytesPerPixel];
+                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[defilteredCurrIndex - width * bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + defilteredUp) % 256; 
                     break;
 
                 // average filter: defiltered byte = curr filtered + floor((defiltered left + defiltered up) / 2)
                 case 3:
-                    defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[currByteIndex - bytesPerPixel];
-                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - width * bytesPerPixel];
+                    defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[defilteredCurrIndex - bytesPerPixel];
+                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[defilteredCurrIndex - width * bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + (defilteredLeft + defilteredUp) / 2) % 256;
                     break;
 
                 // paeth filter: defiltered byte = curr filtered + paethPredictor(defiltered left + defiltered up + defiltered left up (diagonal))
                 case 4:
-                    defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[currByteIndex - bytesPerPixel];
-                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[currByteIndex - width * bytesPerPixel];
-                    defilteredLeftUp = (lineIndex == 0 || colIndex < bytesPerPixel) ? 0 : defilteredData[currByteIndex - width * bytesPerPixel - bytesPerPixel];
+                    defilteredLeft = (colIndex < bytesPerPixel) ? 0 : defilteredData[defilteredCurrIndex - bytesPerPixel];
+                    defilteredUp = (lineIndex == 0) ? 0 : defilteredData[defilteredCurrIndex - width * bytesPerPixel];
+                    defilteredLeftUp = (lineIndex == 0 || colIndex < bytesPerPixel) ? 0 : defilteredData[defilteredCurrIndex - width * bytesPerPixel - bytesPerPixel];
                     defilteredCurr = (decompressedData[currByteIndex] + paethPredictor(defilteredLeft, defilteredUp, defilteredLeftUp)) % 256;
                     break;
 
