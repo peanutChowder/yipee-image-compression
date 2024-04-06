@@ -120,12 +120,7 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
                     break;
 
                 default:
-                    std::cerr << "Error: invalid row filter '" << filter << "' at row " << lineIndex << ", byte " << lineIndex * colWidth;
-                    // std::cerr << ". Contents: ";
-                    // for (int i = lineIndex * colWidth; i < lineIndex * colWidth + colWidth; i++) {
-                    //     std::cerr << " " << (int) decompressedData[i];
-                    // }
-                    std::cerr << std::endl;
+                    printGetFilterErr(filter, lineIndex, colWidth, decompressedData);
                     exit(-1);
                     break;
             }
@@ -135,6 +130,24 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
     }
 
     return true;
+}
+
+void printGetFilterErr(int filter, int lineIndex, int colWidth, std::vector<unsigned char> decompressedData) {
+    std::cerr << "Error: invalid row filter '" << filter << "' at row " << lineIndex << ", byte " << lineIndex * colWidth;
+    std::cerr << ". Contents: " << std::endl;
+    for (int i = lineIndex - 2; i < lineIndex + 2; i++) {
+        std::cerr << "Row " << i << ":";
+        for (int j = 0; j < colWidth; j++) {
+            int debugIndex = i * colWidth + j;
+            if (debugIndex % colWidth == 0 || (debugIndex - 1) % colWidth == 0 || (debugIndex - 2) % colWidth == 0 || (debugIndex + 3) % colWidth == 0 || (debugIndex + 2) % colWidth == 0 || (debugIndex + 1) % colWidth == 0 ) {
+                std::cerr << " " << (int) decompressedData[debugIndex];
+            }  
+            if ((debugIndex - 2) % colWidth == 0) {
+                std::cerr << " ...";
+            }
+        }
+        std::cerr << std::endl;
+    }
 }
 
 int getBytesPerPixel(int colorType, int channelDepth) {
