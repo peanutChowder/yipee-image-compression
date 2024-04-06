@@ -53,9 +53,16 @@ bool decompressIDAT(const std::vector<unsigned char>& compressedData, std::vecto
     // Clean up and return result
     inflateEnd(&stream);
 
-    // perform a flip on the x axis (vertical flip) to match openGL's bottom left (0,0)
-    // std::reverse(decompressedData.begin(), decompressedData.end());
+    printDecompressSummary(compressedData.size(), decompressedData.size());
+
     return true;
+}
+
+void printDecompressSummary(int compressedSize, int decompressedSize) {
+    std::cout << PRINT_DIVIDER_BIG << std::endl;
+    std::cout << "Decompression summary:" << std::endl;
+    std::cout << "\tCompressed len: " << compressedSize << std::endl;
+    std::cout << "\tDecompressed len: " << decompressedSize << std::endl;
 }
 
 unsigned char paethPredictor(unsigned char left, unsigned char up, unsigned char leftUp) {
@@ -159,7 +166,7 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
 }
 
 void printFilterSummary(struct FilterCounts filterCounts) {
-    std::cout << PRINT_DIVIDER << std::endl;
+    std::cout << PRINT_DIVIDER_BIG << std::endl;
     std::cout << "Filter summary: " << std::endl;
     std::cout << "\tNone: " << filterCounts.none << std::endl;
     std::cout << "\tSub: " << filterCounts.sub << std::endl;

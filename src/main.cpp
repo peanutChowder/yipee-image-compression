@@ -1,10 +1,14 @@
 #include <iostream>
+#include <string>
 
-// header files
 #include "timer.h"
 #include "processImage.h"
 #include "displayImage.h"
 #include "readImage.h"
+
+void printTimeElapsed(std::string taskName, double start, double end) {
+    std::cout << "\t" << taskName << " took " << (end - start) << "s or " << (end - start) * 1000 << "ms." << std::endl;
+}
 
 int main()
 {
@@ -15,26 +19,26 @@ int main()
     std::vector<unsigned char> compressedIDAT, decompressedIDAT, defilteredIDAT;
     struct ihdr ihdrData;
 
+    // read image bytes
     GET_TIME(start);
-    bool res = readPNGImage(filename, compressedIDAT, ihdrData);
-    GET_TIME(end);
-
-    if (!res)
-    {
-        printf("Image reading failed\n");
+    if (!readPNGImage(filename, compressedIDAT, ihdrData)) {
+        std::cout << "Image reading failed" << std::endl;
         exit(EXIT_FAILURE);
     }
+    GET_TIME(end);
+    printTimeElapsed("Image reading", start, end);
 
-    printf("Image loaded\nLoading took %fs / %fms\n", (end - start), (end - start) * 1000);
-    printf("Image pixels: %d width x %d height\n", ihdrData.width, ihdrData.height);
+    // decompress image data (IDAT chunks)
+    GET_TIME(start);
+    if (!decompressIDAT(compressedIDAT, decompressedIDAT)) {
+        std::cout << "Image decompression failed" << std::endl;
+    };
+    GET_TIME(end);
+    printTimeElapsed("Image decompression", start, end);
 
-    std::cout << "Decompressing data..." << std::endl;
-    decompressIDAT(compressedIDAT, decompressedIDAT);
 
-    std::cout << "============================" << std::endl;
-    std::cout << "Decompression results:" << std::endl;
-    std::cout << "Compressed len: " << compressedIDAT.size() << std::endl;
-    std::cout << "Decompressed len: " << decompressedIDAT.size() << std::endl;
+
+
 
     defilterIDAT(decompressedIDAT, defilteredIDAT, ihdrData.width, ihdrData.height, ihdrData.colorType, ihdrData.channelDepth);
 
