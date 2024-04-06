@@ -133,9 +133,11 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
 }
 
 void printGetFilterErr(int filter, int lineIndex, int colWidth, std::vector<unsigned char> decompressedData) {
+    int lineStart = lineIndex >= 2 ? lineIndex - 2 : lineIndex;
+    int lineEnd = lineStart + 4;
     std::cerr << "Error: invalid row filter '" << filter << "' at row " << lineIndex << ", byte " << lineIndex * colWidth;
     std::cerr << ". Contents: " << std::endl;
-    for (int i = lineIndex - 2; i < lineIndex + 2; i++) {
+    for (int i = lineStart; i < lineEnd; i++) {
         std::cerr << "Row " << i << ":";
         for (int j = 0; j < colWidth; j++) {
             int debugIndex = i * colWidth + j;
