@@ -16,6 +16,8 @@
 #include "readImage.h"
 #include "printUtils.h"
 
+bool printVerbose = false;
+
 int compareHeaders(unsigned char header[], std::string headerType)
 {
     if (headerType == "PNG")
@@ -59,6 +61,10 @@ int byteArrayToInt(unsigned char byteArr[], int len)
 
 void printChunkInfo(int sizeBytes, int offset, unsigned char chunkHeader[])
 {
+    if (!printVerbose) {
+        return;
+    }
+
     std::cout << PRINT_DIVIDER << std::endl;
     std::cout << "Chunk header: " << chunkHeader << std::endl;
     std::cout << std::endl
@@ -94,15 +100,15 @@ bool readIDAT(int fd, int start, int size, std::vector<unsigned char> &imageRGBA
     return true;
 }
 
-void printIHDRSummary(struct ihdr ihdrData) {
-    std::cout << PRINT_DIVIDER << std::endl;
-    std::cout << "IHDR Summary" << std::endl;
-    std::cout << "Dimensions: " << ihdrData.width << " x " << ihdrData.height << std::endl;
-    std::cout << "Channel depth: " << ihdrData.channelDepth << std::endl;
-    std::cout << "Color type: " << ihdrData.colorType << std::endl;
-    std::cout << "Compression method: " << ihdrData.compressionMethod << std::endl;
-    std::cout << "Filter method: " << ihdrData.filterMethod << std::endl;
-    std::cout << "Interlace method: " << ihdrData.interlaceMethod << std::endl;
+void printReadSummary(struct ihdr ihdrData) {
+    std::cout << PRINT_DIVIDER_BIG << std::endl;
+    std::cout << "Image reading summary" << std::endl;
+    std::cout << "\tDimensions: " << ihdrData.width << " x " << ihdrData.height << std::endl;
+    std::cout << "\tChannel depth: " << ihdrData.channelDepth << std::endl;
+    std::cout << "\tColor type: " << ihdrData.colorType << std::endl;
+    std::cout << "\tCompression method: " << ihdrData.compressionMethod << std::endl;
+    std::cout << "\tFilter method: " << ihdrData.filterMethod << std::endl;
+    std::cout << "\tInterlace method: " << ihdrData.interlaceMethod << std::endl;
 
 }
 
@@ -218,8 +224,6 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, s
                 std::cerr << "Error reading IHDR" << std::endl;
                 exit(EXIT_FAILURE);
             }
-
-            printIHDRSummary(ihdrData);
         }
 
         // print size and chunk name
@@ -254,6 +258,8 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, s
         std::cerr << "Unsupported color type. Only type 6 is supported!" << std::endl;
         return false;
     }
+
+    printReadSummary(ihdrData);
 
     return true;
 }
