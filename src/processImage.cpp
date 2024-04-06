@@ -45,7 +45,7 @@ bool decompressIDAT(const std::vector<unsigned char>& compressedData, std::vecto
     inflateEnd(&stream);
 
     // perform a flip on the x axis (vertical flip) to match openGL's bottom left (0,0)
-    std::reverse(decompressedData.begin(), decompressedData.end());
+    // std::reverse(decompressedData.begin(), decompressedData.end());
     return true;
 }
 
