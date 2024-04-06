@@ -18,8 +18,6 @@
         0x49, 0x45, 0x4e, 0x44 \
     }
 
-#define PRINT_DIVIDER "----------" 
-
 struct ihdr {
     int width;
     int height;

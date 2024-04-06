@@ -14,6 +14,7 @@
 #include <iomanip>
 
 #include "readImage.h"
+#include "printUtils.h"
 
 int compareHeaders(unsigned char header[], std::string headerType)
 {
