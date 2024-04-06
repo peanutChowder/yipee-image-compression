@@ -96,7 +96,7 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
         // no pixel data overflow.
         for (int colIndex = 1; colIndex < colWidth; colIndex++) { 
             currByteIndex = lineIndex * colWidth + colIndex;
-            defilteredCurrIndex = currByteIndex - lineIndex; // Defiltered data does not include the 1 byte filter
+            defilteredCurrIndex = currByteIndex - lineIndex - 1; // Defiltered data does not include the 1 byte filter
 
             switch (filter) {
                 // no filter -- add byte directly
