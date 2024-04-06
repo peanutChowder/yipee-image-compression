@@ -22,7 +22,7 @@ int main()
     // read image bytes
     GET_TIME(start);
     if (!readPNGImage(filename, compressedIDAT, ihdrData)) {
-        std::cout << "Image reading failed" << std::endl;
+        std::cerr << "Image reading failed" << std::endl;
         exit(EXIT_FAILURE);
     }
     GET_TIME(end);
@@ -31,7 +31,7 @@ int main()
     // decompress image data (IDAT chunks)
     GET_TIME(start);
     if (!decompressIDAT(compressedIDAT, decompressedIDAT)) {
-        std::cout << "Image decompression failed" << std::endl;
+        std::cerr << "Image decompression failed" << std::endl;
     };
     GET_TIME(end);
     printTimeElapsed("Image decompression", start, end);
@@ -39,8 +39,12 @@ int main()
 
 
 
-
-    defilterIDAT(decompressedIDAT, defilteredIDAT, ihdrData.width, ihdrData.height, ihdrData.colorType, ihdrData.channelDepth);
+    GET_TIME(start);
+    if (!defilterIDAT(decompressedIDAT, defilteredIDAT, ihdrData.width, ihdrData.height, ihdrData.colorType, ihdrData.channelDepth)) {
+        std::cerr << "Defiltering failed" << std::endl;
+    }
+    GET_TIME(end);
+    printTimeElapsed("Image defiltering", start, end);
 
     displayDecompressedImage(defilteredIDAT, ihdrData.width, ihdrData.height);
     
