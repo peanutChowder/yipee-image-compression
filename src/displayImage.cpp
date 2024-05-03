@@ -6,15 +6,33 @@
 
 #include "displayImage.h"
 
+void calcOutputWindowSize(const int imageWidth, const int imageHeight, int &windowWidth, int &windowHeight) {
+    int heightScale = imageHeight / MAX_WINDOW_HEIGHT;
+    int widthScale = imageWidth / MAX_WINDOW_WIDTH;
+
+    if (heightScale == 1 && widthScale == 1) {
+        windowHeight = imageHeight;
+        windowWidth = imageWidth;
+        return;
+    }
+    int scale = std::max(heightScale, widthScale);
+
+    windowHeight = imageHeight / scale;
+    windowWidth = imageWidth / scale;
+}
+
 void displayDecompressedImage(const std::vector<unsigned char>& imageData, int width, int height) {
+    int windowWidth, windowHeight;
     // Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return;
     }
 
+    calcOutputWindowSize(width, height, windowWidth, windowHeight);
+
     // Create a windowed mode window and its OpenGL context
-    GLFWwindow* window = glfwCreateWindow(width, height, "Decompressed Image", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Decompressed Image", NULL, NULL);
     if (!window) {
         glfwTerminate();
         std::cerr << "Failed to create GLFW window" << std::endl;
