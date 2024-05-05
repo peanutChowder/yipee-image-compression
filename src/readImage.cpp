@@ -253,7 +253,7 @@ bool readPNGImage(const char *filename, std::vector<unsigned char> &imageRGBA, s
     }
 
     // Temporary block since we currently cannot guarantee the code is built
-    // for bytes/pixel != 4 (i.e. RGBA)
+    // for color type 6, i.e. bytes/pixel != 4 (i.e. RGBA)
     if (ihdrData.colorType != 6) {
         std::cerr << "Unsupported color type. Only type 6 is supported!" << std::endl;
         return false;
