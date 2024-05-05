@@ -1,28 +1,7 @@
 Processing results for single threaded:
     image: forest-3584x2048.png
 
-        ====================
-        Image reading summary
-                Dimensions: 3584 x 2048
-                Channel depth: 8
-                Color type: 6
-                Compression method: 0
-                Filter method: 0
-                Interlace method: 0
-                Image reading took 1.44925s or 1449.25ms.
-        ====================
-        Decompression summary:
-                Compressed len: 15162763
-                Decompressed len: 29362176
-                Image decompression took 0.641979s or 641.979ms.
-        ====================
-        Filter summary: 
-                None: 0
-                Sub: 1605632
-                Up: 14336
-                Average: 7397376
-                Paeth: 20342784
-                Image defiltering took 1.65515s or 1655.15ms.
-        ====================
-        Final summary
-                Total processing took 3.74693s or 3746.93ms.
+        Image reading:          0.58468 0.55560 0.58880 0.57171 0.57439 0.58296 0.59468  | Avg: 0.57897 s
+        Image decompression:    1.14089 0.98297 0.97616 0.98107 1.00234 1.01434 0.96268  | Avg: 1.00863 s
+        Image filtering:        3.32746 2.85472 2.75591 2.79059 2.80138 2.85235 2.82685  | Avg: 2.88704 s
+        Image overall:          5.05315 4.39341 4.32103 4.34347 4.37823 4.44974 4.38432  | Avg: 4.47476 s
