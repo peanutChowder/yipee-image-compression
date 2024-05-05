@@ -13,7 +13,7 @@ void printTimeElapsed(std::string taskName, double start, double end) {
 }
 
 int modeTiming() {
-double start, end;
+    double start, end;
     double startGlobal, endGlobal;
 
     const char *filename = "../test-images/forest-3584x2048.png"; 
