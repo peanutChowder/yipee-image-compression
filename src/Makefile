@@ -1,4 +1,4 @@
-CC = g++
+CC = mpiCC
 CC_FLAGS = -g -fopenmp
 
 main: main.cpp readImage.cpp processImage.o displayImage.o readImage.o
