@@ -94,6 +94,10 @@ bool defilterIDAT(std::vector<unsigned char> &decompressedData, std::vector<unsi
     // each line is occupied by pixel data + 1 byte for the filter
     colWidth = width * bytesPerPixel + 1;
 
+    // Reserve the output vector. We subtract 'height' to account for  
+    // discarding the filter byte at the start of each line.
+    defilteredData.reserve(colWidth * height - height);
+
     for (int lineIndex = 0; lineIndex < height; lineIndex++) {
         filter = decompressedData[lineIndex * colWidth]; // get the filter which is located in the first byte of each line
 
