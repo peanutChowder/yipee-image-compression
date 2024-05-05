@@ -1,5 +1,5 @@
 CC = g++
-CC_FLAGS = -g
+CC_FLAGS = -g -fopenmp
 
 main: main.cpp readImage.cpp processImage.o displayImage.o readImage.o
 	$(CC) $(CC_FLAGS) -o main main.cpp processImage.o displayImage.o readImage.o -lglfw -lGLEW -lGLU -lGL -lm -lXrandr -lXi -lX11 -lpthread -ldl -lz
